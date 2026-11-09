@@ -1,8 +1,8 @@
-"""Map tiles + click queries for the Argo GPR velocity product.
+"""Map tiles.
 
-Reads two public copies of the same Zarr data on Cloudflare R2 (no credentials):
-  maps.zarr    1 month x 1 level x 180x360 cells    -> map tiles (TilesPlugin)
-  series.zarr  216 months x 30 levels x 6x6 cells   -> click -> time series / profile (WMSPlugin)
+Reads two public copies of the same zarr:
+  maps.zarr    1 month x 1 level x 180x360 cells    -> map tiles (Tiles)
+  series.zarr  216 months x 30 levels x 6x6 cells   -> click -> time series / profile (WMS)
 """
 
 import os
@@ -22,13 +22,8 @@ DATA = os.environ.get(
 
 
 def open_public_zarr(url: str) -> xr.Dataset:
-    """Open a public Zarr over HTTPS with obstore (Rust). Unlike fsspec/aiohttp it is not
-    tied to one asyncio event loop, so xpublish-tiles' async loading works.
-    chunks=None: no dask; each request loads exactly the chunks it needs (as xpublish-tiles' CLI does)."""
     store = ObjectStore(HTTPStore.from_url(url), read_only=True)
     ds = xr.open_zarr(store, chunks=None)
-    # The CF link u -> u_std ("ancillary_variables") makes xpublish-tiles attach u_std as a
-    # coordinate of u, which breaks a click query asking for u and u_std together. Drop it here.
     for name in ds.data_vars:
         ds[name].attrs.pop("ancillary_variables", None)
     return ds
@@ -48,8 +43,6 @@ app = rest.app
 
 @app.middleware("http")
 async def cache_successful_gets(request, call_next):
-    """Tiles, legends and point queries of this fixed dataset version never change:
-    let browsers (and any CDN) reuse them, so a looping animation only hits the server once."""
     response = await call_next(request)
     if request.method == "GET" and response.status_code == 200 and request.url.path.startswith("/datasets/"):
         response.headers["Cache-Control"] = "public, max-age=86400"
