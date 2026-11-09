@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: uvargotiles
+    runtime: python
+    region: virginia            # next to the R2 bucket (Eastern North America)
+    plan: starter               # ~350 MB steady memory measured with the settings below
+    branch: main
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn serve_velocity:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /datasets
+    envVars:
+      - key: NUMBA_NUM_THREADS
+        value: "1"
+      - key: XPUBLISH_TILES_NUM_THREADS
+        value: "2"

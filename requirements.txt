@@ -1,0 +1,12 @@
+xpublish-tiles==0.13.1
+xpublish==0.5.2
+xarray==2026.9.0
+zarr==3.4.2
+numba==0.68.1
+datashader==0.19.1
+# newer FastAPI leaves xpublish-tiles' default image format unvalidated -> HTTP 500 on tiles
+fastapi==0.135.3
+starlette==1.10.0
+pydantic==2.14.3
+obstore==0.12.1
+uvicorn==0.54.0
